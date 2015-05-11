@@ -3,10 +3,13 @@
 #include <stdio.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <iostream>
 
 
 // function prototype
 void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray);
+void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int windowSize, int maxDisp);
+void selectDisparity(cv::Mat &dispLeft, cv::Mat &dispRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int scaleDispFactor);
 
 int main(int argc, char* argv[])
 {
@@ -15,18 +18,29 @@ int main(int argc, char* argv[])
 	cv::imshow("Tsukuba Left", img_left);
 	cv::imshow("Tsukuba Right", img_right);
 
-	
-
 	// init grayscale mat with 0's
 	cv::Mat imgGray_l(img_left.rows, img_left.cols, CV_8UC3, cv::Scalar(0,0,0));
 	cv::Mat imgGray_r(img_right.rows, img_right.cols, CV_8UC3, cv::Scalar(0,0,0));
 
+	cv::Mat disp_left(img_left.rows, img_left.cols, CV_32FC1, cv::Scalar(0,0,0));
+	cv::Mat disp_right(img_right.rows, img_right.cols, CV_32FC1, cv::Scalar(0,0,0));
 	
 	convertToGrayscale(img_left, imgGray_l);
 	convertToGrayscale(img_right, imgGray_r);
+
+	int maxDisp = 15;
+	int windowSize = 5;
+	int scaleFactor = 16;
+
+	std::vector<cv::Mat> *costVolumeLeft = new std::vector<cv::Mat>(maxDisp);
+	std::vector<cv::Mat> *costVolumeRight = new std::vector<cv::Mat>(maxDisp);
+
+	computeCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, windowSize, maxDisp);
+	selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
+
 	
-	cv::imshow("Gray Left", imgGray_l);
-	cv::imshow("Gray Right", imgGray_r);
+	//cv::imshow("Gray Left", imgGray_l);
+	//cv::imshow("Gray Right", imgGray_r);
 
 	cv::waitKey(0);
 
@@ -43,10 +57,8 @@ void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray)
 			uchar L = 0.21*img.at<cv::Vec3b>(i,j)[2] + 0.72*img.at<cv::Vec3b>(i,j)[1] + 0.07*img.at<cv::Vec3b>(i,j)[0];
 			cv::Vec3b gray(L,L,L);
 			imgGray.at<cv::Vec3b>(i,j) = gray;
-			
 		}
 	}
-	
 }
 
 // Start with value 15 for maxDisp
@@ -54,6 +66,15 @@ void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray)
 // Number of elements in the vector for maxDisp = 15 is 16 (0-15)
 void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int windowSize, int maxDisp)
 {
+	int start = windowSize/2;
+	
+	for(int i = start; i < imgLeft.rows - start; i++)
+	{
+		for(int j = start; j < imgLeft.cols - start; j++)
+		{
+			
+		}
+	}
 }
 
 
