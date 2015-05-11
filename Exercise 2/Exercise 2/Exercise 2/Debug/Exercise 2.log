@@ -1,0 +1,10 @@
+﻿Build started 5/11/2015 1:06:20 PM.
+     1>Project "C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Exercise 2.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Debug\Exercise 2.exe" /INCREMENTAL /NOLOGO /LIBPATH:C:\opencv\build\x86\vc11\lib opencv_calib3d2410.lib opencv_contrib2410.lib opencv_core2410.lib opencv_features2d2410.lib opencv_flann2410.lib opencv_gpu2410.lib opencv_highgui2410.lib opencv_imgproc2410.lib opencv_legacy2410.lib opencv_ml2410.lib opencv_objdetect2410.lib opencv_ts2410.lib opencv_video2410.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Debug\Exercise 2.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Debug\Exercise 2.lib" /MACHINE:X86 Debug\main.obj
+         Exercise 2.vcxproj -> C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Debug\Exercise 2.exe
+     1>Done Building Project "C:\Users\Velitchko\Desktop\stereo vision\ex1\Exercise 2\Exercise 2\Exercise 2\Exercise 2.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.73
