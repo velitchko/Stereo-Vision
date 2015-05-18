@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	std::vector<cv::Mat> *costVolumeRight = new std::vector<cv::Mat>(maxDisp);
 
 	computeCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, windowSize, maxDisp);
-	show(*costVolumeLeft, "Left", maxDisp);
+	show(*costVolumeRight, "Right", maxDisp);
 	
 	selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 
@@ -86,8 +86,10 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 	std::cout << "Max Disparity: " << maxDisp << std::endl;
 	std::cout << "Window Size: " << windowSize << std::endl;
 	std::cout << "Start at: " << windowSize/2 << std::endl;
+
 	int start = windowSize/2;
-	float sad;
+	int sad_left;
+	int sad_right;
 
 	// iterate through all possible disparities
 	for(int d = 0; d < maxDisp; d++)
@@ -98,21 +100,41 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 		// iterate through image rows (Y)
 		for(int i = start; i < imgLeft.rows - start; i++)
 		{
-			sad = 0;
 			// iterate through image Columns (X)
 			for(int j = start; j < imgLeft.cols - start; j++)
 			{
 				//std::cout << "P(" << j << "," << i << ") \t Q(" << j << "," << i-d << ")\t d:" << d << std::endl; //<< imgLeft.at<cv::Vec3b>(j,i)[0] + " << imgRight.at<cv::Vec3b>(j,i-d)[0] 
-				
+				int startY = i - start;
+				int startX = j - start;
+				int endY = i + start + 1;
+				int endX = j + start + 1;
+
+				sad_left = 0;
+				sad_right = 0;
+
 				// imgVector(y,x)
 				// Compute Sum of Absolute Differences
-				for(int k = -start; k <= start; k++)
+				
+				for(int k = startY; k <= endY; k++)
 				{
-					for(int l = -start; l < start; l++)
+					const uchar* left_pixel = imgLeft.ptr<uchar>(k);
+					const uchar* right_pixel = imgRight.ptr<uchar>(k);
+
+					for(int l = startX; l < endX; l++)
 					{
-						sad += abs(imgLeft.at<cv::Vec3b>(i+k,j+l)[0] - imgRight.at<cv::Vec3b>(i+k, j+l-d)[0]);
+						// Left -> Right
+						int gray_left = left_pixel[l];
+						int gray_right = right_pixel[l-d];
+						// Right -> Left
+						int gray_left_r = left_pixel[l-d];
+						int gray_right_r = right_pixel[l];
+
+						sad_left += abs(gray_left - gray_right);
+						sad_right += abs(gray_right_r - gray_left_r);
+						//sad += abs(imgLeft.at<cv::Vec3b>(i+k,j+l)[0] - imgRight.at<cv::Vec3b>(i+k, j+l-d)[0]);
 					}
 				}
+				
 				// Hard-coded for 5x5 window size
 				//sad = 
 				//		// y - 2 
@@ -147,8 +169,9 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 				//		abs(imgLeft.at<cv::Vec3b>(i+2, j+2)[0]       - imgRight.at<cv::Vec3b>(i+2, j-d+2)[0]);					  
 					
 				// save to costVolume
-				costVolumeLeft.at(d).at<cv::Vec3b>(i,j) = cv::Vec3b(sad,sad,sad);
-				//costVolumeRight.at(d).at<cv::Vec3b>(j,i) = cv::Vec3b(sad,sad,sad);
+			
+				costVolumeLeft.at(d).at<cv::Vec3b>(i,j) = sad_left;
+				costVolumeRight.at(d).at<cv::Vec3b>(i,j) = sad_right;
 			}
 		}
 	}
