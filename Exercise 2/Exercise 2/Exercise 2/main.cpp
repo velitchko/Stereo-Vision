@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
 	computeCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, windowSize, maxDisp);
 	//show(*costVolumeLeft, "Left", maxDisp);
-	//show(*costVolumeRight, "Right", maxDisp);
+	show(*costVolumeRight, "Right", maxDisp);
 	
 	selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 
@@ -127,7 +127,7 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 						int gray_left = left_pixel[l];
 						int gray_right = right_pixel[l-d];
 						// Right -> Left
-						int gray_left_r = left_pixel[l-d];
+						int gray_left_r = left_pixel[l+d];
 						int gray_right_r = right_pixel[l];
 						// SAD
 						sad_left += abs(gray_left - gray_right);
