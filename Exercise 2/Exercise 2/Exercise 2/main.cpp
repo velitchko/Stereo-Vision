@@ -6,26 +6,27 @@
 #include <iostream>
 #include <string>
 
+using namespace cv;
 
 // function prototype
-void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray);
-void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int windowSize, int maxDisp);
-void selectDisparity(cv::Mat &dispLeft, cv::Mat &dispRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int scaleDispFactor);
-void show(const std::vector<cv::Mat> &costVolume, const std::string left_right, int maxDisp);
+void convertToGrayscale(const Mat &img, Mat &imgGray);
+void computeCostVolume(const Mat &imgLeft, const Mat &imgRight, std::vector<Mat> &costVolumeLeft, std::vector<Mat> &costVolumeRight, int windowSize, int maxDisp);
+void selectDisparity(Mat &dispLeft, Mat &dispRight, std::vector<Mat> &costVolumeLeft, std::vector<Mat> &costVolumeRight, int scaleDispFactor);
+void show(const std::vector<Mat> &costVolume, const std::string left_right, int maxDisp);
 
 int main(int argc, char* argv[])
 {
-	cv::Mat img_left = cv::imread("tsukuba_left.png", CV_LOAD_IMAGE_COLOR);
-	cv::Mat img_right = cv::imread("tsukuba_right.png", CV_LOAD_IMAGE_COLOR);
-	cv::imshow("Tsukuba Left", img_left);
-	cv::imshow("Tsukuba Right", img_right);
+	Mat img_left = imread("tsukuba_left.png", CV_LOAD_IMAGE_COLOR);
+	Mat img_right = imread("tsukuba_right.png", CV_LOAD_IMAGE_COLOR);
+	imshow("Tsukuba Left", img_left);
+	imshow("Tsukuba Right", img_right);
 
 	// init grayscale mat with 0's
-	cv::Mat imgGray_l(img_left.rows, img_left.cols, CV_8UC3, cv::Scalar(0,0,0));
-	cv::Mat imgGray_r(img_right.rows, img_right.cols, CV_8UC3, cv::Scalar(0,0,0));
+	Mat imgGray_l = Mat::zeros(img_left.rows, img_left.cols, CV_8UC1);
+	Mat imgGray_r = Mat::zeros(img_right.rows, img_right.cols, CV_8UC1);
 
-	cv::Mat disp_left(img_left.rows, img_left.cols, CV_32FC1, cv::Scalar(0,0,0));
-	cv::Mat disp_right(img_right.rows, img_right.cols, CV_32FC1, cv::Scalar(0,0,0));
+	Mat disp_left = Mat::zeros(img_left.rows, img_left.cols, CV_32FC1);
+	Mat disp_right = Mat::zeros(img_right.rows, img_right.cols, CV_32FC1);
 	
 	convertToGrayscale(img_left, imgGray_l);
 	convertToGrayscale(img_right, imgGray_r);
@@ -34,8 +35,8 @@ int main(int argc, char* argv[])
 	int windowSize = 5;
 	int scaleFactor = 16;
 
-	std::vector<cv::Mat> *costVolumeLeft = new std::vector<cv::Mat>(maxDisp);
-	std::vector<cv::Mat> *costVolumeRight = new std::vector<cv::Mat>(maxDisp);
+	std::vector<Mat> *costVolumeLeft = new std::vector<Mat>(maxDisp);
+	std::vector<Mat> *costVolumeRight = new std::vector<Mat>(maxDisp);
 
 	computeCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, windowSize, maxDisp);
 	show(*costVolumeLeft, "Left", maxDisp);
@@ -43,34 +44,33 @@ int main(int argc, char* argv[])
 	selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 
 	
-	//cv::imshow("Gray Left", imgGray_l);
-	//cv::imshow("Gray Right", imgGray_r);
+	//imshow("Gray Left", imgGray_l);
+	//imshow("Gray Right", imgGray_r);
 
-	cv::waitKey(0);
+	waitKey(0);
 
 	return 0;
 }
 
-void show(const std::vector<cv::Mat> &costVolume, const std::string left_right, int maxDisp)
+void show(const std::vector<Mat> &costVolume, const std::string left_right, int maxDisp)
 {
 
 	for(int i = 0; i < maxDisp; i++)
 	{
 		std::string str = "Cost Volume " + left_right + " " + std::to_string(i);
-		cv::imshow(str, costVolume.at(i));
+		imshow(str, costVolume.at(i));
 	}
 }
 
-void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray)
+void convertToGrayscale(const Mat &img, Mat &imgGray)
 {
 	for(int i = 0; i < imgGray.rows; i++)
 	{
 		for(int j = 0; j < imgGray.cols; j++)
 		{
 			// L = 0.21*R + 0.72*G + 0.07*B;
-			uchar L = 0.21*img.at<cv::Vec3b>(i,j)[2] + 0.72*img.at<cv::Vec3b>(i,j)[1] + 0.07*img.at<cv::Vec3b>(i,j)[0];
-			cv::Vec3b gray(L,L,L);
-			imgGray.at<cv::Vec3b>(i,j) = gray;
+			uchar L = 0.21*img.at<Vec3b>(i,j)[2] + 0.72*img.at<Vec3b>(i,j)[1] + 0.07*img.at<Vec3b>(i,j)[0];
+			imgGray.at<uchar>(i,j) = L;
 		}
 	}
 }
@@ -78,7 +78,7 @@ void convertToGrayscale(const cv::Mat &img, cv::Mat &imgGray)
 // Start with value 15 for maxDisp
 // Mat type in costVolume vectors CV_32FC1
 // Number of elements in the vector for maxDisp = 15 is 16 (0-15)
-void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int windowSize, int maxDisp)
+void computeCostVolume(const Mat &imgLeft, const Mat &imgRight, std::vector<Mat> &costVolumeLeft, std::vector<Mat> &costVolumeRight, int windowSize, int maxDisp)
 {
 
 	std::cout << "Left Image Size: " << imgLeft.cols << "," << imgLeft.rows << std::endl;
@@ -92,17 +92,17 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 	// iterate through all possible disparities
 	for(int d = 0; d < maxDisp; d++)
 	{
-		costVolumeLeft.at(d) = cv::Mat(imgLeft.rows, imgLeft.cols, CV_32FC1, cv::Scalar(0,0,0));
-		costVolumeRight.at(d) = cv::Mat(imgRight.rows, imgRight.cols, CV_32FC1, cv::Scalar(0,0,0));
+		costVolumeLeft.at(d) = Mat::zeros(imgLeft.rows, imgLeft.cols, CV_32FC1);
+		costVolumeRight.at(d) = Mat::zeros(imgRight.rows, imgRight.cols, CV_32FC1);
 
 		// iterate through image rows (Y)
 		for(int i = start; i < imgLeft.rows - start; i++)
 		{
-			sad = 0;
 			// iterate through image Columns (X)
 			for(int j = start; j < imgLeft.cols - start; j++)
 			{
-				//std::cout << "P(" << j << "," << i << ") \t Q(" << j << "," << i-d << ")\t d:" << d << std::endl; //<< imgLeft.at<cv::Vec3b>(j,i)[0] + " << imgRight.at<cv::Vec3b>(j,i-d)[0] 
+				sad = 0;
+				//std::cout << "P(" << j << "," << i << ") \t Q(" << j << "," << i-d << ")\t d:" << d << std::endl; //<< imgLeft.at<Vec3b>(j,i)[0] + " << imgRight.at<Vec3b>(j,i-d)[0] 
 				
 				// imgVector(y,x)
 				// Compute Sum of Absolute Differences
@@ -110,45 +110,13 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 				{
 					for(int l = -start; l < start; l++)
 					{
-						sad += abs(imgLeft.at<cv::Vec3b>(i+k,j+l)[0] - imgRight.at<cv::Vec3b>(i+k, j+l-d)[0]);
+						sad += abs(imgLeft.at<uchar>(i+k,j+l) - imgRight.at<uchar>(i+k, j+l-d));
 					}
 				}
-				// Hard-coded for 5x5 window size
-				//sad = 
-				//		// y - 2 
-				//		abs(imgLeft.at<cv::Vec3b>(i-start, j-start)[0]   - imgRight.at<cv::Vec3b>(i-start, j-start-d)[0])		  +  // x - 2
-				//		abs(imgLeft.at<cv::Vec3b>(i-start, j-start+1)[0] - imgRight.at<cv::Vec3b>(i-start, j-start-d+1)[0])		  +  // x - 1
-				//		abs(imgLeft.at<cv::Vec3b>(i-start, j)[0]         - imgRight.at<cv::Vec3b>(i-start, j-d)[0])				  +  // x 
-				//		abs(imgLeft.at<cv::Vec3b>(i-start, j+1)[0]       - imgRight.at<cv::Vec3b>(i-start, j-d+1)[0])			  +  // x + 1
-				//		abs(imgLeft.at<cv::Vec3b>(i-start, j+2)[0]       - imgRight.at<cv::Vec3b>(i-start, j-d+2)[0])			  +  // x + 2
-				//		// y - 1
-				//		abs(imgLeft.at<cv::Vec3b>(i-start+1, j-start)[0]   - imgRight.at<cv::Vec3b>(i-start+1, j-d-start)[0])	  +
-				//		abs(imgLeft.at<cv::Vec3b>(i-start+1, j-start+1)[0] - imgRight.at<cv::Vec3b>(i-start+1, j-d-start+1)[0])   +
-				//		abs(imgLeft.at<cv::Vec3b>(i-start+1, j)[0]         - imgRight.at<cv::Vec3b>(i-start+1, j-d)[0])			  +
-				//		abs(imgLeft.at<cv::Vec3b>(i-start+1, j+1)[0]       - imgRight.at<cv::Vec3b>(i-start+1, j-d+1)[0])         +
-				//		abs(imgLeft.at<cv::Vec3b>(i-start+1, j+2)[0]       - imgRight.at<cv::Vec3b>(i-start+1, j-d+2)[0])         +
-				//		// y
-				//		abs(imgLeft.at<cv::Vec3b>(i, j-start)[0]   - imgRight.at<cv::Vec3b>(i, j-d-start)[0])					  +
-				//		abs(imgLeft.at<cv::Vec3b>(i, j-start+1)[0] - imgRight.at<cv::Vec3b>(i, j-d-start+1)[0])					  +
-				//		abs(imgLeft.at<cv::Vec3b>(i, j)[0]         - imgRight.at<cv::Vec3b>(i, j-d)[0])						      +
-				//		abs(imgLeft.at<cv::Vec3b>(i, j+1)[0]       - imgRight.at<cv::Vec3b>(i, j-d+1)[0])						  +
-				//		abs(imgLeft.at<cv::Vec3b>(i, j+2)[0]       - imgRight.at<cv::Vec3b>(i, j-d+2)[0])						  +
-				//		// y + 1 
-				//		abs(imgLeft.at<cv::Vec3b>(i+1, j-start)[0]   - imgRight.at<cv::Vec3b>(i+1, j-d-start)[0])				  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+1, j-start+1)[0] - imgRight.at<cv::Vec3b>(i+1, j-d-start+1)[0])				  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+1, j)[0]         - imgRight.at<cv::Vec3b>(i+1, j-d)[0])						  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+1, j+1)[0]       - imgRight.at<cv::Vec3b>(i+1, j-d+1)[0])					  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+1, j+2)[0]       - imgRight.at<cv::Vec3b>(i+1, j-d+2)[0])					  +
-				//		// y + 2 
-				//		abs(imgLeft.at<cv::Vec3b>(i+2, j-start)[0]   - imgRight.at<cv::Vec3b>(i+2, j-d-start)[0])				  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+2, j-start+1)[0] - imgRight.at<cv::Vec3b>(i+2, j-d-start+1)[0])				  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+2, j)[0]         - imgRight.at<cv::Vec3b>(i+2, j-d)[0])						  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+2, j+1)[0]       - imgRight.at<cv::Vec3b>(i+2, j-d+1)[0])					  +
-				//		abs(imgLeft.at<cv::Vec3b>(i+2, j+2)[0]       - imgRight.at<cv::Vec3b>(i+2, j-d+2)[0]);					  
-					
+
 				// save to costVolume
-				costVolumeLeft.at(d).at<cv::Vec3b>(i,j) = cv::Vec3b(sad,sad,sad);
-				//costVolumeRight.at(d).at<cv::Vec3b>(j,i) = cv::Vec3b(sad,sad,sad);
+				costVolumeLeft.at(d).at<float>(i, j) = sad / (255*windowSize*windowSize);
+				//costVolumeRight.at(d).at<Vec3b>(j,i) = Vec3b(sad,sad,sad);
 			}
 		}
 	}
@@ -157,7 +125,7 @@ void computeCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vec
 
 // maxDisp * scaleDispFactor must be a value below 256
 // scaleDispFactor of 16 for a maxDisp value of 15
-void selectDisparity(cv::Mat &dispLeft, cv::Mat &dispRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int scaleDispFactor)
+void selectDisparity(Mat &dispLeft, Mat &dispRight, std::vector<Mat> &costVolumeLeft, std::vector<Mat> &costVolumeRight, int scaleDispFactor)
 {
 }
 
