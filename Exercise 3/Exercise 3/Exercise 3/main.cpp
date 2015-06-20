@@ -1,5 +1,3 @@
-// Excersize 1.cpp : Defines the entry point for the console application.
-//
 #include <stdio.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -15,6 +13,8 @@ using namespace std;
 void convertToGrayscale(const Mat &img, Mat &imgGray);
 void computeCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int windowSize, int maxDisp);
 void selectDisparity(Mat &dispLeft, Mat &dispRight, vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int scaleDispFactor);
+void aggregateCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int r, double eps);
+void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor);
 void show(const vector<Mat> &costVolume, const string left_right, int maxDisp);
 
 int main(int argc, char* argv[])
@@ -76,6 +76,8 @@ int main(int argc, char* argv[])
 		t = ((double)getTickCount() - t) / getTickFrequency();
 
 		selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
+
+		aggregateCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01);
 		
 		imshow("Disparity Left", disp_left);
 		imshow("Disparity Right", disp_right);
@@ -214,8 +216,7 @@ void computeCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &cos
 
 // maxDisp * scaleDispFactor must be a value below 256
 // scaleDispFactor of 16 for a maxDisp value of 15
-void selectDisparity(Mat &dispLeft, Mat &dispRight,
-	vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int scaleDispFactor)
+void selectDisparity(Mat &dispLeft, Mat &dispRight,	vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int scaleDispFactor)
 {
 	Mat minCostLeft = Mat::ones(dispLeft.rows, dispLeft.cols, CV_32FC1);
 	Mat minCostRight = Mat::ones(dispLeft.rows, dispLeft.cols, CV_32FC1);
@@ -245,11 +246,16 @@ void selectDisparity(Mat &dispLeft, Mat &dispRight,
 //Window size of guided filter = 2*r+1
 //r = 9
 //eps = 0.01^2
-void aggregateCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int r, double eps)
+void aggregateCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int r, double eps)
 {
 	int disparities = costVolumeLeft.size();
-	cv::Mat guidanceLeft = guidedFilter(imgLeft, imgLeft, r ,eps);
-	cv::Mat guidanceRight = guidedFilter(imgRight, imgRight, r, eps);
+	Mat p_l = imgLeft;
+	Mat p_r = imgRight;
+	eps *= 255 * 255;
+	Mat guidanceLeft = guidedFilter(imgLeft, p_l, r ,eps);
+	Mat guidanceRight = guidedFilter(imgRight, p_r, r, eps);
+	imshow("guidanceLeft", guidanceLeft);
+	imshow("guidanceRight", guidanceRight);
 	int window_size = 2*r + 1;
 
 	for(int i = 0; i < disparities; i++)
@@ -258,13 +264,13 @@ void aggregateCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::v
 		{
 			for(int y = 0; y < imgLeft.rows; y++)
 			{
-			
+				// aggregate sum over window
 			}
 		}
 	}
 
 }
 
-void refineDisparity(cv::Mat &dispLeft, cv::Mat &dispRight, int scaleFactor)
+void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor)
 {
 }
