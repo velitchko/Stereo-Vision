@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "guidedfilter.h"
 #include <iostream>
 #include <string>
 #include <Windows.h>
@@ -84,8 +85,8 @@ int main(int argc, char* argv[])
 		cout << "Done in " << t << "seconds. Save files? (y/n)" << endl;
 		getline(cin, line);
 		if (line == "y") {
-			imwrite("disp_left.png", disp_left);
-			imwrite("disp_right.png", disp_right);
+			imwrite(names[img] + "_disp_left.png", disp_left);
+			imwrite(names[img] + "_disp_right.png", disp_right);
 			cout << "Done!" << endl;
 		}
 
@@ -241,3 +242,29 @@ void selectDisparity(Mat &dispLeft, Mat &dispRight,
 	}
 }
 
+//Window size of guided filter = 2*r+1
+//r = 9
+//eps = 0.01^2
+void aggregateCostVolume(const cv::Mat &imgLeft, const cv::Mat &imgRight, std::vector<cv::Mat> &costVolumeLeft, std::vector<cv::Mat> &costVolumeRight, int r, double eps)
+{
+	int disparities = costVolumeLeft.size();
+	cv::Mat guidanceLeft = guidedFilter(imgLeft, imgLeft, r ,eps);
+	cv::Mat guidanceRight = guidedFilter(imgRight, imgRight, r, eps);
+	int window_size = 2*r + 1;
+
+	for(int i = 0; i < disparities; i++)
+	{
+		for(int x = 0; x < imgLeft.cols; x++)
+		{
+			for(int y = 0; y < imgLeft.rows; y++)
+			{
+			
+			}
+		}
+	}
+
+}
+
+void refineDisparity(cv::Mat &dispLeft, cv::Mat &dispRight, int scaleFactor)
+{
+}
