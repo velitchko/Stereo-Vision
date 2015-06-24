@@ -46,8 +46,7 @@ int main(int argc, char* argv[])
 		cout << "Image chosen: " << names[img] << endl;
 		cout << "Window size: " << windowSize << endl;
 		cout << "Max Disp: " << maxDisp-1 << endl;
-		cin.get();
-
+		
 		img_left = imread(names[img] + "_left.png", CV_LOAD_IMAGE_COLOR);
 		img_right = imread(names[img] + "_right.png", CV_LOAD_IMAGE_COLOR);
 
@@ -97,7 +96,7 @@ int main(int argc, char* argv[])
 			cout << "Done!" << endl;
 		}
 
-		cout << "restart?" << endl;
+		cout << "restart? (y/n)" << endl;
 		getline(cin, line); running = line == "y";
 
 	}
@@ -278,45 +277,57 @@ void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor)
 	int epsilon = 1;
 	int invalid = 255;
 
-	vector<Coords> invalids;
+	vector<Coords> left_invalids, right_invalids;
 
+	uchar left, right, leftD, rightD;
 	for (int y = 0; y < dispLeft.rows; y++) {
 		for (int x = 0; x < dispLeft.cols; x++) {
-			uchar left = dispLeft.at<uchar>(y, x) / scaleFactor;
-			uchar right = dispRight.at<uchar>(y, x - left) / scaleFactor;
-			if (abs(left - right) > epsilon) {
+			left = dispLeft.at<uchar>(y, x) / scaleFactor;
+			right = dispRight.at<uchar>(y, x) / scaleFactor;
+			leftD = dispLeft.at<uchar>(y, x + right) / scaleFactor;
+			rightD = dispRight.at<uchar>(y, x - left) / scaleFactor;
+
+			if (abs(left - rightD) > epsilon) {
 				dispLeft.at<uchar>(y, x) = invalid;
-				invalids.push_back({ y, x });
+				left_invalids.push_back({ y, x });
+			}
+
+			if (abs(leftD - right) > epsilon) {
+				dispRight.at<uchar>(y, x) = invalid;
+				right_invalids.push_back({ y, x });
 			}
 		}
 	}
 
-	for (auto coords : invalids) {
-		uchar dl, dr;
-		int currentX = coords.x;
-		uchar currentDisp;
-		
-		while (currentX >= 0) {
-			currentDisp = dispLeft.at<uchar>(coords.y, currentX);
-			if (currentDisp != invalid) {
-				dl = currentDisp;
-				break;
-			}
-			currentX--;
-		}
+	for (int i = 0; i < 2; i++) {
+		vector<Coords>& invalids = i == 0 ? left_invalids : right_invalids;
+		Mat& disp = i == 0 ? dispLeft : dispRight;
 
-		currentX = coords.x;
-		while (currentX < dispLeft.cols) {
-			currentDisp = dispLeft.at<uchar>(coords.y, currentX);
-			if (currentDisp != invalid) {
-				dr = currentDisp;
-				break;
-			}
-			currentX++;
-		}
+		for (auto coords : invalids) {
+			uchar dl, dr;
+			int currentX = coords.x;
+			uchar currentDisp;
 
-		dispLeft.at<uchar>(coords.y, coords.x) = min(dl,dr);
+			while (currentX >= 0) {
+				currentDisp = disp.at<uchar>(coords.y, currentX);
+				if (currentDisp != invalid) {
+					dl = currentDisp;
+					break;
+				}
+				currentX--;
+			}
+
+			currentX = coords.x;
+			while (currentX < disp.cols) {
+				currentDisp = disp.at<uchar>(coords.y, currentX);
+				if (currentDisp != invalid) {
+					dr = currentDisp;
+					break;
+				}
+				currentX++;
+			}
+
+			disp.at<uchar>(coords.y, coords.x) = min(dl, dr);
+		}
 	}
-
-
 }
