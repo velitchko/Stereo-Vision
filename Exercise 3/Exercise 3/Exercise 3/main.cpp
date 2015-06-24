@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
 		Mat img_left, img_right;
 		string line; istringstream str;
-		int img, maxDisp, windowSize;
+		unsigned int img, maxDisp, windowSize;
 		getline(cin, line); str = istringstream(line); str >> img; img--;
 		if (!str || img > names->size() || img < 0) { img = 0; }
 
@@ -75,9 +75,9 @@ int main(int argc, char* argv[])
 		computeCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, windowSize, maxDisp);
 		t = ((double)getTickCount() - t) / getTickFrequency();
 
-		selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 
-		aggregateCostVolume(imgGray_l, imgGray_r, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01);
+		aggregateCostVolume(img_left, img_right, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01);
+		selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 		
 		imshow("Disparity Left", disp_left);
 		imshow("Disparity Right", disp_right);
@@ -115,7 +115,7 @@ void convertToGrayscale(const Mat &img, Mat &imgGray)
 		for(int j = 0; j < imgGray.cols; j++)
 		{
 			// L = 0.21*R + 0.72*G + 0.07*B;
-			uchar L = 0.21*img.at<Vec3b>(i,j)[2] + 0.72*img.at<Vec3b>(i,j)[1] + 0.07*img.at<Vec3b>(i,j)[0];
+			uchar L = (uchar)(0.21*img.at<Vec3b>(i,j)[2] + 0.72*img.at<Vec3b>(i,j)[1] + 0.07*img.at<Vec3b>(i,j)[0]);
 			imgGray.at<uchar>(i,j) = L;
 		}
 	}
@@ -134,7 +134,7 @@ void computeCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &cos
 	cout << "Start at: " << windowSize/2 << endl;
 	int start = windowSize/2;
 	int sad_left, sad_right;
-	float normalize = 1.0 / (255 * windowSize*windowSize);
+	float normalize = 1.0f / (255 * windowSize*windowSize);
 
 	// iterate through all possible disparities
 	for(int d = 0; d < maxDisp; d++)
@@ -221,7 +221,7 @@ void selectDisparity(Mat &dispLeft, Mat &dispRight,	vector<Mat> &costVolumeLeft,
 	Mat minCostLeft = Mat::ones(dispLeft.rows, dispLeft.cols, CV_32FC1);
 	Mat minCostRight = Mat::ones(dispLeft.rows, dispLeft.cols, CV_32FC1);
 
-	for (int d = 0; d < costVolumeLeft.size(); d++) {
+	for (unsigned int d = 0; d < costVolumeLeft.size(); d++) {
 		Mat &layerLeft = costVolumeLeft.at(d);
 		Mat &layerRight = costVolumeRight.at(d);
 
@@ -249,24 +249,24 @@ void selectDisparity(Mat &dispLeft, Mat &dispRight,	vector<Mat> &costVolumeLeft,
 void aggregateCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &costVolumeLeft, vector<Mat> &costVolumeRight, int r, double eps)
 {
 	int disparities = costVolumeLeft.size();
-	Mat p_l = imgLeft;
-	Mat p_r = imgRight;
 	eps *= 255 * 255;
-	Mat guidanceLeft = guidedFilter(imgLeft, p_l, r ,eps);
-	Mat guidanceRight = guidedFilter(imgRight, p_r, r, eps);
-	imshow("guidanceLeft", guidanceLeft);
-	imshow("guidanceRight", guidanceRight);
-	int window_size = 2*r + 1;
 
 	for(int i = 0; i < disparities; i++)
 	{
-		for(int x = 0; x < imgLeft.cols; x++)
-		{
-			for(int y = 0; y < imgLeft.rows; y++)
-			{
-				// aggregate sum over window
-			}
-		}
+		Mat &p_l = costVolumeLeft.at(i);
+		Mat &p_r = costVolumeRight.at(i);
+		imshow("p_l", costVolumeLeft.at(i));
+		waitKey(100);
+		cin.get();
+
+		p_l = guidedFilter(imgLeft, p_l, r, eps);
+		p_r = guidedFilter(imgRight, p_r, r, eps);
+		
+
+		imshow("p_l", costVolumeLeft.at(i));
+		
+		waitKey(100);
+		cin.get();
 	}
 
 }
