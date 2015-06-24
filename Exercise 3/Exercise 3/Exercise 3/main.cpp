@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 		t = ((double)getTickCount() - t) / getTickFrequency();
 
 
-		aggregateCostVolume(img_left, img_right, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01);
+		aggregateCostVolume(img_left, img_right, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01); //TODO parameter ausprobieren
 		
 		selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
 		
@@ -302,7 +302,7 @@ void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor)
 	for (int i = 0; i < 2; i++) {
 		vector<Coords>& invalids = i == 0 ? left_invalids : right_invalids;
 		Mat& disp = i == 0 ? dispLeft : dispRight;
-
+		
 		for (auto coords : invalids) {
 			uchar dl, dr;
 			int currentX = coords.x;
@@ -329,5 +329,10 @@ void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor)
 
 			disp.at<uchar>(coords.y, coords.x) = min(dl, dr);
 		}
+		
+		Mat src = disp.clone();
+		medianBlur(src, disp, 3); //TODO
 	}
+
+	
 }
