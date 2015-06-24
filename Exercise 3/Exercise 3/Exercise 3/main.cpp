@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 		convertToGrayscale(img_left, imgGray_l);
 		convertToGrayscale(img_right, imgGray_r);
 
-		int scaleFactor = 256 / maxDisp;
+		int scaleFactor = 255 / maxDisp;
 
 		vector<Mat> *costVolumeLeft = new vector<Mat>(maxDisp);
 		vector<Mat> *costVolumeRight = new vector<Mat>(maxDisp);
@@ -77,7 +77,12 @@ int main(int argc, char* argv[])
 
 
 		aggregateCostVolume(img_left, img_right, *costVolumeLeft, *costVolumeRight, 9, 0.01*0.01);
+		
 		selectDisparity(disp_left, disp_right, *costVolumeLeft, *costVolumeRight, scaleFactor);
+		
+		refineDisparity(disp_left, disp_right, scaleFactor);
+
+
 		
 		imshow("Disparity Left", disp_left);
 		imshow("Disparity Right", disp_right);
@@ -232,11 +237,11 @@ void selectDisparity(Mat &dispLeft, Mat &dispRight,	vector<Mat> &costVolumeLeft,
 
 				if (valueLeft < minCostLeft.at<float>(y, x)) {
 					minCostLeft.at<float>(y, x) = valueLeft;
-					dispLeft.at<uchar>(y, x) = d * scaleDispFactor;
+					dispLeft.at<uchar>(y, x) = min(254,d * scaleDispFactor); //255 reserved as invalid
 				}
 				if (valueRight < minCostRight.at<float>(y, x)) {
 					minCostRight.at<float>(y, x) = valueRight;
-					dispRight.at<uchar>(y, x) = d * scaleDispFactor;
+					dispRight.at<uchar>(y, x) = min(254,d * scaleDispFactor); //255 reserved as invalid
 				}
 			}
 		}
@@ -255,22 +260,63 @@ void aggregateCostVolume(const Mat &imgLeft, const Mat &imgRight, vector<Mat> &c
 	{
 		Mat &p_l = costVolumeLeft.at(i);
 		Mat &p_r = costVolumeRight.at(i);
-		imshow("p_l", costVolumeLeft.at(i));
-		waitKey(100);
-		cin.get();
-
+		
 		p_l = guidedFilter(imgLeft, p_l, r, eps);
 		p_r = guidedFilter(imgRight, p_r, r, eps);
 		
-
-		imshow("p_l", costVolumeLeft.at(i));
-		
-		waitKey(100);
-		cin.get();
 	}
 
 }
 
+struct Coords {
+	int y;
+	int x;
+};
+
 void refineDisparity(Mat &dispLeft, Mat &dispRight, int scaleFactor)
 {
+	int epsilon = 1;
+	int invalid = 255;
+
+	vector<Coords> invalids;
+
+	for (int y = 0; y < dispLeft.rows; y++) {
+		for (int x = 0; x < dispLeft.cols; x++) {
+			uchar left = dispLeft.at<uchar>(y, x) / scaleFactor;
+			uchar right = dispRight.at<uchar>(y, x - left) / scaleFactor;
+			if (abs(left - right) > epsilon) {
+				dispLeft.at<uchar>(y, x) = invalid;
+				invalids.push_back({ y, x });
+			}
+		}
+	}
+
+	for (auto coords : invalids) {
+		uchar dl, dr;
+		int currentX = coords.x;
+		uchar currentDisp;
+		
+		while (currentX >= 0) {
+			currentDisp = dispLeft.at<uchar>(coords.y, currentX);
+			if (currentDisp != invalid) {
+				dl = currentDisp;
+				break;
+			}
+			currentX--;
+		}
+
+		currentX = coords.x;
+		while (currentX < dispLeft.cols) {
+			currentDisp = dispLeft.at<uchar>(coords.y, currentX);
+			if (currentDisp != invalid) {
+				dr = currentDisp;
+				break;
+			}
+			currentX++;
+		}
+
+		dispLeft.at<uchar>(coords.y, coords.x) = min(dl,dr);
+	}
+
+
 }
